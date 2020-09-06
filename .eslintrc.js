@@ -39,5 +39,8 @@ module.exports = {
     "@babel/new-cap": "error",
     "@babel/no-invalid-this": "error",
     "@babel/no-unused-expressions": "error",
+    // unicorn
+    "unicorn/no-null": "off",
+    "unicorn/no-reduce": "off",
   },
 };

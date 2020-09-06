@@ -135,7 +135,7 @@ class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
     const [path, ...paths] = Array.isArray(key) ? key : key.split('.');
     const observable = this.#observables[path];
     if (!observable) return null;
-    if (!paths.length) return observable;
+    if (paths.length === 0) return observable;
     if (!(observable instanceof Collection)) return null;
     return observable.one(paths);
   }
@@ -307,7 +307,7 @@ class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
   static from<TValue>(values: ObservableValues<TValue>): Collection<TValue> {
     return new Collection(
       Object.keys(values).reduce(
-        (acc, key) => ({ ...acc, [key]: Observable.from(values[key]) }),
+        (accumulator, key) => ({ ...accumulator, [key]: Observable.from(values[key]) }),
         {}
       )
     );
