@@ -1,0 +1,33 @@
+# lint and format
+.prettierrc
+.eslintrc.js
+.eslintignore
+
+# nvm node version
+.nvmrc
+
+# build
+rollup.config.*.js
+babel.config.js
+
+# ci
+
+# jest
+__snapshots__/
+*.test.js
+/coverage/
+/jest/
+
+# IDE configurations
+.editorconfig
+.vscode
+
+# npm pack output
+*.tgz
+
+# typescript config
+tsconfig.json
+/@types/
+
+# source
+/src/
