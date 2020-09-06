@@ -42,5 +42,10 @@ module.exports = {
     // unicorn
     "unicorn/no-null": "off",
     "unicorn/no-reduce": "off",
+    "unicorn/prevent-abbreviations": "off",
+    // typescript
+    "@typescript-eslint/ban-ts-comment": "off",
+    // overrides
+    "no-shadow": "off",
   },
 };

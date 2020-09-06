@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 export interface Flush<TCall> {
   (calls: TCall[][]): void;
 }
@@ -14,11 +15,12 @@ interface Batcher<TCall> {
  */
 function createBatcher<TCall>(flush: Flush<TCall>, timeout = 0): Batcher<TCall> {
   let calls: TCall[][] = [];
-  let timeoutId: NodeJS.Timeout | undefined;
+  let timeoutId: number | undefined;
 
   function listener(...args: TCall[]) {
     calls.push(args);
     if (timeoutId) return;
+    // @ts-ignore ts bullshit
     timeoutId = setTimeout(() => {
       timeoutId = undefined;
       flush(calls);

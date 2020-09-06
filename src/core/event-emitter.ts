@@ -62,7 +62,7 @@ class EventEmitter<TEvent> {
     if (!listener) throw new Error('Cannot call <EventEmitter>.off without a listener');
     if (!this.#listeners[type]) return this;
     const listeners = this.#listeners[type].filter((fn) => fn !== listener);
-    if (listeners.length) {
+    if (listeners.length > 0) {
       this.#listeners[type] = listeners;
     } else {
       delete this.#listeners[type];

@@ -15,6 +15,10 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "lib": [
+      "ESNext",
+      "DOM",
+    ],
     // Where to load module types from
     "typeRoots": [
       "node_modules/@types",
