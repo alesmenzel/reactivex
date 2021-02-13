@@ -18,7 +18,7 @@
     "test:unit:watch": "jest --watchAll --config ./jest/jest.config.js",
     "test:coverage": "jest --ci --config ./jest/jest-coverage.config.js",
     "test:coverage:watch": "jest --coverage --watchAll -i --config ./jest/jest-coverage.config.js",
-    "types": "tsc --noEmit --project tsconfig.json",
+    "types": "tsc --project tsconfig.json",
     "prepublishOnly": "npm run test"
   },
   "engines": {
