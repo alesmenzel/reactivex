@@ -6,6 +6,7 @@
     // Allow JS
     "allowJs": true,
     "checkJs": true,
+    // "noEmit": true,
     // Modules
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -20,7 +21,6 @@
     "strictPropertyInitialization": true,
     // Declaration d.ts file
     "declaration": true,
-    "emitDeclarationOnly": true,
     "declarationDir": "./dist/types/",
     // Library and types
     "lib": [

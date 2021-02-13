@@ -8,7 +8,7 @@
   "author": "Aleš Menzel <alesmenzel@gmail.com> (https://github.com/alesmenzel)",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "rollup --config rollup.config.js && tsc --project tsconfig.json",
+    "build": "rollup --config rollup.config.js && tsc --emitDeclarationOnly --project tsconfig.json",
     "cb": "run-s clean build",
     "lint": "eslint .",
     "format": "eslint --fix .",
@@ -18,7 +18,7 @@
     "test:unit:watch": "jest --watchAll --config ./jest/jest.config.js",
     "test:coverage": "jest --ci --config ./jest/jest-coverage.config.js",
     "test:coverage:watch": "jest --coverage --watchAll -i --config ./jest/jest-coverage.config.js",
-    "types": "tsc --project tsconfig.json",
+    "types": "tsc --noEmit --project tsconfig.json",
     "prepublishOnly": "npm run test"
   },
   "engines": {
