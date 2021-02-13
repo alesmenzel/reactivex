@@ -1,23 +1,38 @@
-/* eslint-disable no-unused-vars */
-export interface Flush<TCall> {
-  (calls: TCall[][]): void;
+export interface Flush<TListenerArg> {
+  (calls: TListenerArg[][]): void;
 }
 
-interface Batcher<TCall> {
-  listener(...args: TCall[]): void;
+export interface Batcher<TListenerArg> {
+  listener(...args: TListenerArg[]): void;
   abort(): void;
 }
 
 /**
  * Batch calls in given time window and then flush them
- * @param {(...any[]) => void} flush
+ * @example
+ * ```js
+ * const onFlush = (...args) => {
+ *   console.log('Flushed', args) // Called after timeout
+ * }
+ * const timeout = 100 // ms
+ * const batcher = createBatcher(onFlush, timeout)
+ *
+ * batcher.listener('some', 'args')
+ * batcher.listener('some', 'args')
+ * batcher.listener('some', 'args')
+ * // flush after 100ms passed
+ * batcher.listener('some', 'args')
+ * // ...
+ * batcher.abort()
+ * ```
+ * @param {Flush<TListenerArg>} flush
  * @param {number} [timeout=0]
  */
-function createBatcher<TCall>(flush: Flush<TCall>, timeout = 0): Batcher<TCall> {
-  let calls: TCall[][] = [];
+function createBatcher<TListenerArg>(flush: Flush<TListenerArg>, timeout = 0): Batcher<TListenerArg> {
+  let calls: TListenerArg[][] = [];
   let timeoutId: number | undefined;
 
-  function listener(...args: TCall[]) {
+  function listener(...args: TListenerArg[]) {
     calls.push(args);
     if (timeoutId) return;
     // @ts-ignore ts bullshit

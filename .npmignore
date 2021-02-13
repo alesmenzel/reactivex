@@ -14,9 +14,9 @@ babel.config.js
 
 # jest
 __snapshots__/
-*.test.js
-/coverage/
-/jest/
+**/*.test.js
+coverage/
+jest/
 
 # IDE configurations
 .editorconfig
@@ -27,7 +27,7 @@ __snapshots__/
 
 # typescript config
 tsconfig.json
-/@types/
+types/
 
 # source
-/src/
+src/

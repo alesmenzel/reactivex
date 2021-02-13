@@ -1,32 +1,43 @@
 {
   "compilerOptions": {
-    "target": "ESNext" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019' or 'ESNEXT'. */,
-    "module": "ESNext" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
-    "allowJs": true /* Allow javascript files to be compiled. */,
-    "checkJs": true /* Report errors in .js files. */,
-    "noEmit": true /* Do not emit files. */,
-    "esModuleInterop": true, // Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'.
-    "noImplicitAny": true, // Raise error on expressions and declarations with an implied any type.
-    "noImplicitThis": true, // Raise error on this expressions with an implied any type.
-    "strictNullChecks": true, // In strict null checking mode, the null and undefined values are not in the domain of every type and are only assignable to themselves and any (the one exception being that undefined is also assignable to void).
-    "strictBindCallApply": true, // Enable stricter checking of the bind, call, and apply methods on functions.
-    "strictFunctionTypes": true, // Disable bivariant parameter checking for function types.
-    "strictPropertyInitialization": true, // Ensure non-undefined class properties are initialized in the constructor. This option requires --strictNullChecks be enabled in order to take effect.
+    "baseUrl": ".",
+    "target": "ESNext",
+    "module": "ESNext",
+    // Allow JS
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": false,
+    // Modules
+    "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "baseUrl": ".",
+    "skipLibCheck": true,
+    // Strickness
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    // Declaration d.ts file
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "./dist/types/",
+    // Library and types
     "lib": [
       "ESNext",
       "DOM",
     ],
-    // Where to load module types from
     "typeRoots": [
-      "node_modules/@types",
-      "./@types",
-    ],
+      "./node_modules/@types",
+      "./types"
+    ]
   },
+  "include": [
+    "./src/**/*"
+  ],
   "exclude": [
-    "coverage/",
-    "dist/",
-  ]
+    "./coverage/",
+    "./dist/",
+  ],
 }

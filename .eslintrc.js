@@ -1,4 +1,5 @@
 module.exports = {
+  parser: "@typescript-eslint/parser",
   extends: [
     'plugin:@typescript-eslint/recommended',
     'plugin:jest/recommended',
@@ -43,9 +44,13 @@ module.exports = {
     "unicorn/no-null": "off",
     "unicorn/no-reduce": "off",
     "unicorn/prevent-abbreviations": "off",
+    "unicorn/no-array-for-each": "off",
+    "unicorn/no-array-reduce": "off",
     // typescript
     "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-unused-vars": "error",
     // overrides
     "no-shadow": "off",
+    "no-unused-vars": "off",
   },
 };

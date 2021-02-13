@@ -1,4 +1,4 @@
-interface ComposedFunction<TReturn> {
+export interface ComposedFunction<TReturn> {
   (...args: TReturn[]): TReturn;
 }
 

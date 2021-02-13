@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-const pckg = require('./package.json')
-
 module.exports = {
 	// This configuration is only for jest
 	env: {
@@ -10,7 +7,7 @@ module.exports = {
 					'@babel/preset-env',
 					{
 						targets: {
-							node: pckg.engines.node.replace(/[^\d.]+/g, ''),
+							node: "current",
 						},
 					},
 				],

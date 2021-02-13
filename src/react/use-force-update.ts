@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { useReducer } from 'react';
 
 function reducer(state: boolean): boolean {

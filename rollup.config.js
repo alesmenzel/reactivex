@@ -1,21 +1,22 @@
+import path from "path"
 import babel from 'rollup-plugin-babel'
 import json from '@rollup/plugin-json'
 import commonjs from 'rollup-plugin-commonjs'
 import resolve from 'rollup-plugin-node-resolve'
 import progress from 'rollup-plugin-progress'
 import { terser } from 'rollup-plugin-terser'
-import package_ from './package.json'
+import {version as babelRuntimeVersion} from "@babel/runtime/package.json"
 
-const BABEL_RUNTIME_VERSION = package_.devDependencies['@babel/runtime'].replace(/^\D*/, '')
 const EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.json']
+const DIST = path.resolve(__dirname, 'dist')
 
 export default [
-	// ES module (for bundlers) build.
+	// ES module
 	{
 		input: 'src/index.ts',
 		output: [
 			{
-				file: package_.main,
+				file: path.resolve(DIST, 'reactivex.js'),
 				format: 'es',
 				sourcemap: true,
 				indent: false,
@@ -62,7 +63,7 @@ export default [
 						// Exract babel runtime helpers so they are defined only once per project
 						'@babel/plugin-transform-runtime',
 						{
-							version: BABEL_RUNTIME_VERSION,
+							version: babelRuntimeVersion,
 							useESModules: true,
 						},
 					],

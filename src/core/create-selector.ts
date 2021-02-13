@@ -1,6 +1,6 @@
 import Observable from './observable';
 
-interface Calculation<TInput, TReturn> {
+export interface Calculation<TInput, TReturn = TInput> {
   (value: TInput): TReturn;
 }
 
@@ -12,13 +12,12 @@ interface ObservableValuesByKey<TValue> {
   [key: string]: TValue;
 }
 
-interface Comparison<TValue> {
+export interface Comparison<TValue> {
   (value: TValue, newValue: TValue): boolean;
 }
 
-function defaultCalculation<TValue>(
-  value: ObservableValuesByKey<TValue>
-): ObservableValuesByKey<TValue> {
+// TODO: type this shit somehow with generics
+function defaultCalculation(value: any) {
   return value;
 }
 
@@ -39,15 +38,15 @@ function strictComparison<TValue>(value: TValue, newValue: TValue) {
  *   (value, newValue) => value === newValue
  * )
  * ```
- * @param {ObservableByKey<TValue>} observablesByKey
- * @param {Calculation<ObservableValuesByKey<TValue>, TReturn>} [calculation=strictComparison]
- * @param {(value: any, newValue: any) => boolean} [comparison=defaultComparison]
+ * @param {ObservableByKey<TObservableValues>} observablesByKey
+ * @param {Calculation<ObservableValuesByKey<TObservableValues>, TObservableOutput>} [calculation=strictComparison]
+ * @param {(value: TObservableOutput, newValue: TObservableOutput) => boolean} [comparison=defaultComparison]
  */
-function createSelector<TValue, TReturn>(
-  observablesByKey: ObservableByKey<TValue>,
-  calculation: Calculation<ObservableValuesByKey<TValue>, any> = defaultCalculation,
-  comparison: Comparison<any> = strictComparison
-): Observable<TReturn> {
+function createSelector<TObservableValues, TObservableOutput>(
+  observablesByKey: ObservableByKey<TObservableValues>,
+  calculation: Calculation<ObservableValuesByKey<TObservableValues>, TObservableOutput> = defaultCalculation,
+  comparison: Comparison<TObservableOutput> = strictComparison
+): Observable<TObservableOutput> {
   const keys = Object.keys(observablesByKey);
   const observables = Object.values(observablesByKey);
   function getObservableValue() {

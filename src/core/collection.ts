@@ -1,5 +1,6 @@
-import Observable, { IObservable, Listener, Unsubscribe } from './observable';
+import Observable from './observable';
 import EventEmitter from './event-emitter';
+import type { IObservable, Listener, Unsubscribe } from './observable';
 
 type ObservableByKey<TValue> = { [key: string]: IObservable<TValue> };
 type ObservableValues<TValue> = { [key: string]: TValue };
