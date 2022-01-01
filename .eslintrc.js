@@ -4,15 +4,11 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:jest/recommended',
     'plugin:promise/recommended',
-    'plugin:unicorn/recommended',
     'airbnb',
     'airbnb/hooks',
     'prettier',
-    'prettier/@typescript-eslint',
-    'prettier/babel',
-    'prettier/react',
   ],
-  plugins: ['@typescript-eslint', '@babel', 'jest', 'promise', 'unicorn'],
+  plugins: ['@typescript-eslint', '@babel', 'jest', 'promise'],
   settings: {
     // Setup import plugin to work with typescript
     'import/extensions': ['.js', '.jsx', '.ts', '.tsx'],
