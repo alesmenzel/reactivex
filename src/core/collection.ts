@@ -1,73 +1,80 @@
-import Observable from './observable';
-import EventEmitter from './event-emitter';
-import type { IObservable, Listener, Unsubscribe } from './observable';
+import Atom, { IAtom } from './atom';
+import EventEmitter, { Listener, Unsubscribe } from './event-emitter';
 
-type ObservableByKey<TValue> = { [key: string]: IObservable<TValue> };
-type ObservableValues<TValue> = { [key: string]: TValue };
+export type AtomsByKey<Value> = { [key: string]: IAtom<Value> };
+export type AtomValuesByKey<Value> = { [key: string]: Value };
+export type CollectionEvents<Value> = {
+  update: AtomValuesByKey<Value>
+}
 
 /**
  * Collection is an observable container of multiple observable values.
- * Whenever one of the values changes the collection is chnaged as well.
+ * Whenever one of the values changes the collection is changed as well.
  */
-class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
-  implements IObservable<ObservableValues<TValue>> {
-  #value: ObservableValues<TValue>;
+class Collection<Value>
+  extends EventEmitter<CollectionEvents<Value>>
+  implements IAtom<AtomValuesByKey<Value>> {
+  #value: AtomValuesByKey<Value> = {};
 
-  #observables: ObservableByKey<TValue>;
+  #atoms: AtomsByKey<Value> = {};
 
-  #meta: { [key: string]: { unsubscribe: () => void } };
+  #meta: { [key: string]: { unsubscribe: () => void } } = {};
 
   /**
    * Constructs a Collection
    * @example
    * ```
    * // Create a collection
-   * const collection = new ObservableCollection({ x: Observable<5>, y: Observable<12> })
+   * const people = new Collection({
+   *   // <id>: Atom<Value>
+   *   1: atom({name: 'John'}),
+   *   2: atom({name: 'Martha'}),
+   *   ...
+   * })
    *
    * // Read from collection
-   * collection.value // { x: 5, y: 12 }
-   * collection.get() // { x: 5, y: 12 }
+   * people.value // { 1: {name: 'John'}, 2: {name: 'Martha'} }
+   * people.get() // { 1: {name: 'John'}, 2: {name: 'Martha'} }
    *
-   * // Update collection´s values
-   * collection.set({ x: 42 }) // collection.value -> { x: 42, y: 12 }
-   * collection.value = { x: 42 } // collection.value -> { x: 42, y: 12 }
+   * // Change collection´s values (updates can be partial)
+   * people.value = { 1: {name: John, job: 'News Reporter'} }
+   * // people.value -> { 1: {name: 'John, job: 'News Reporter'}, 2: {name: 'Martha'} }
+   * people.set({ 1: {name: John, job: 'News Reporter'} })
+   * // people.value -> { 1: {name: 'John, job: 'News Reporter'}, 2: {name: 'Martha'} }
    *
    * // Add to collection
-   * collection.add({ z: Observable<100>, ... }) // collection.value -> { x: 42, y: 12, z: 100 }
+   * people.add({ 3: atom({name: 'Jess'}), ... })
+   * // people.value -> { 1: {name: 'John, job: 'News Reporter'}, 2: {name: 'Martha'}, 3: {name: 'Jess'} }
    *
-   * // Remove from collection
-   * collection.remove("x")
-   * collection.remove(["x", "y"])
+   * // Remove from collection (by id(s))
+   * people.remove("1")
+   * people.remove(["2", "3"])
    *
    * // Listen on changes
-   * collection.subscribe(({ key, observable }) => ...)
-   * collection.unsubscribe(({ key, observable }) => ...)
+   * people.subscribe(({ key, value }) => ...)
+   * people.unsubscribe(({ key, value }) => ...)
    * ```
-   * @param {ObservableByKey<TValue>} [observables={}]
    */
-  constructor(observables: ObservableByKey<TValue> = {}) {
+  constructor(atomsByKey: AtomsByKey<Value> = {}) {
     super();
-    // Observable value
-    this.#value = {};
-    this.#observables = {};
-    this.#meta = {};
+
+    this.add(atomsByKey);
+
     // Binds
     this.get = this.get.bind(this);
     this.set = this.set.bind(this);
     this.subscribe = this.subscribe.bind(this);
     this.unsubscribe = this.unsubscribe.bind(this);
-
-    this.add(observables);
   }
 
   /**
-   * Return observable´s value
+   * Return collection´s value
    * @example
    * ```js
-   * observable.value // { x: 42, y: 23 }
+   * .value // { x: 42, y: 23 }
    * ```
    */
-  get value(): ObservableValues<TValue> {
+  get value(): AtomValuesByKey<Value> {
     return this.#value;
   }
 
@@ -75,38 +82,39 @@ class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
    * Partially update existing values
    * @example
    * ```js
-   * collection.value = { x: 5, y: (y) => y + 15 }
+   * .value = { x: 5, y: (y) => y + 15 }
    * ```
-   * @param {ObservableValues<TValue>} collection
    */
-  set value(collection: ObservableValues<TValue>) {
-    this.set(collection);
+  set value(valuesByKey: AtomValuesByKey<Value>) {
+    this.set(valuesByKey);
   }
 
   /**
-   * Return observable´s value
+   * Return collection´s value
    * @example
    * ```js
-   * observable.get() // { x: 42, y: 23 }
+   * .get() // { x: 42, y: 23 }
    * ```
    */
-  get(): ObservableValues<TValue> {
+  get(): AtomValuesByKey<Value> {
     return this.#value;
   }
 
   /**
    * Partially update existing values
+   *
+   * IMPORTANT: Does not allow to add new atoms! If you want to add a new atom, use .add(...) instead.
    * @example
    * ```js
-   * collection.set({ x: 5, y: (y) => y + 15 })
+   * .set({ x: 5, y: (y) => y + 15 })
    * ```
-   * @param {ObservableValues<TValue>} collection
+   * @param {AtomValuesByKey<Value>} valuesByKey
    */
-  set(collection: ObservableValues<TValue>): this {
-    Object.keys(collection)
-      .filter((key) => this.#value[key])
+  set(valuesByKey: AtomValuesByKey<Value>): this {
+    Object.keys(valuesByKey)
       .forEach((key) => {
-        this.#observables[key].set(collection[key]);
+        if (!this.#atoms[key]) return
+        this.#atoms[key].set(valuesByKey[key]);
       });
     return this;
   }
@@ -115,115 +123,30 @@ class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
    * Return collection keys
    * @example
    * ```js
-   * collection.keys() // ['x', 'y']
+   * .keys // ['x', 'y']
    * ```
    */
   get keys(): string[] {
-    return Object.keys(this.#observables);
+    return Object.keys(this.#atoms);
   }
 
   /**
-   * Return single observable by key path or null
+   * Return single atom by key path or null if not found
    * @example
    * ```js
-   * collection.one('users')
-   * collection.one(['users', '10f2d975'])
-   * collection.one('users.10f2d975')
+   * .one('users') // collection({'10f2d975': atom({name: 'John'}), ...})
+   * .one(['users', '10f2d975']) // atom({name: 'John'})
+   * .one('users.10f2d975') // atom({name: 'John'})
    * ```
    * @param {string|string[]} key
    */
-  one(key: string | string[]): null | IObservable<TValue> {
+  one(key: string | string[]): IAtom<Value> | null {
     const [path, ...paths] = Array.isArray(key) ? key : key.split('.');
-    const observable = this.#observables[path];
-    if (!observable) return null;
-    if (paths.length === 0) return observable;
-    if (!(observable instanceof Collection)) return null;
-    return observable.one(paths);
-  }
-
-  /**
-   * Add observable(s)
-   * @example
-   * ```js
-   * add({ x: Observable<42>, ... })
-   * ```
-   * @param {ObservableByKey<TValue>} observables
-   */
-  add(observables: ObservableByKey<TValue>): this {
-    Object.keys(observables).forEach((key) => {
-      // Check if the key already exists and if does then ubsubscribe from it
-      if (this.#observables[key]) this.#meta[key].unsubscribe();
-      // Add new observable
-      const observable = observables[key];
-      this.#observables[key] = observable;
-      this.#value[key] = observable.value;
-      const unsubscribe = observable.subscribe((value) => {
-        this.#value[key] = value;
-        this.emit('update', this.#value);
-      });
-      this.#meta[key] = this.#meta[key] || {};
-      this.#meta[key].unsubscribe = unsubscribe;
-      this.emit('update', this.#value);
-    });
-    return this;
-  }
-
-  /**
-   * Remove observable(s) from collection
-   * @example
-   * ```js
-   * collection.remove("x")
-   * collection.remove(["x", "y", ...])
-   * ```
-   * @param {string | string[]} key
-   */
-  remove(key: string | string[]): this {
-    // Array of keys
-    if (Array.isArray(key)) {
-      const keys = key;
-      // eslint-disable-next-line no-shadow
-      keys.forEach((key) => {
-        const observable = this.#observables[key];
-        if (!observable) return;
-        this.#meta[key].unsubscribe();
-        delete this.#meta[key];
-        delete this.#observables[key];
-        this.emit('update', this.#value);
-      });
-      return this;
-    }
-
-    // Single key
-    if (!this.#observables[key]) return this;
-    const observable = this.#observables[key];
-    if (!observable) return this;
-    this.#meta[key].unsubscribe();
-    delete this.#meta[key];
-    delete this.#observables[key];
-    this.emit('update', this.#value);
-    return this;
-  }
-
-  /**
-   * Upsert observable(s)
-   * @example
-   * ```js
-   * upsert({ x: Observable<42>, y: 30, ... })
-   * ```
-   * @param {ObservableByKey<TValue>} key
-   */
-  upsert(observables: ObservableByKey<TValue>): this {
-    Object.keys(observables).forEach((key) => {
-      const observable = this.#observables[key];
-      // Add
-      if (!observable) {
-        this.add({ [key]: observables[key] });
-        return;
-      }
-      // Update
-      observable.set(observables[key].value);
-    });
-    return this;
+    const atom = this.#atoms[path];
+    if (!atom) return null;
+    if (!paths.length) return atom;
+    if (atom instanceof Collection) return atom.one(paths);
+    return null;
   }
 
   /**
@@ -236,21 +159,115 @@ class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
    * ```
    * @param {string|string[]} key
    */
-  has(key: string | string[]): boolean {
+   has(key: string | string[]): boolean {
     return Boolean(this.one(key));
   }
 
   /**
-   * Sync collection
+   * Add atom(s)
    * @example
    * ```js
-   * sync({ x: Observable<42>, ... })
+   * .add({ z: atom(42), ... })
    * ```
-   * @param observables
    */
-  sync(observables: ObservableByKey<TValue>): this {
-    [...this.keys, ...Object.keys(observables)].forEach((key) => {
-      const observable = observables[key];
+  add(atomsByKey: AtomsByKey<Value>): this {
+    Object.keys(atomsByKey).forEach((key) => {
+      // Check if the key already exists and if it does then unsubscribe from the atom (override)
+      if (this.#atoms[key]) this.#meta[key].unsubscribe();
+      // Add new observable
+      const atom = atomsByKey[key];
+      this.#atoms[key] = atom;
+      this.#value[key] = atom.value;
+
+      const unsubscribe = atom.subscribe((value) => {
+        // Create a new reference for immutability
+        this.#value = {...this.#value, [key]: value};
+        this.emit('update', this.#value);
+      });
+
+      this.#meta[key] = this.#meta[key] || {};
+      this.#meta[key].unsubscribe = unsubscribe;
+      this.emit('update', this.#value);
+    });
+    return this;
+  }
+
+  /**
+   * Remove atom(s) from collection
+   * @example
+   * ```js
+   * .remove("x")
+   * .remove(["x", "y", ...])
+   * ```
+   * @param {string | string[]} key
+   */
+  remove(key: string | string[]): this {
+    // Array of keys
+    if (Array.isArray(key)) {
+      // eslint-disable-next-line no-shadow
+      key.forEach((key) => {
+        const atom = this.#atoms[key];
+        if (!atom) return;
+        this.#meta[key].unsubscribe();
+        this.#value = {...this.#value}
+        delete this.#value[key]
+        delete this.#atoms[key];
+        delete this.#meta[key];
+        this.emit('update', this.#value);
+      });
+      return this;
+    }
+
+    // Single key
+    if (!this.#atoms[key]) return this;
+    const atom = this.#atoms[key];
+    if (!atom) return this;
+    this.#meta[key].unsubscribe();
+    this.#value = {...this.#value}
+    delete this.#value[key]
+    delete this.#meta[key];
+    delete this.#atoms[key];
+    this.emit('update', this.#value);
+    return this;
+  }
+
+  /**
+   * Upsert atom(s)
+   * IMPORTANT: Only atom values are updated and not the atom reference -> so changing the value of the
+   * passed atom (e.g. `x: atom(42)`) later will not affect the collection value, but it will in case atom
+   * was inserted.
+   * @example
+   * ```js
+   * .upsert({ x: atom(42), y: atom(30), ... })
+   * ```
+   */
+  upsert(atomsByKey: AtomsByKey<Value>): this {
+    Object.keys(atomsByKey).forEach((key) => {
+      const atom = this.#atoms[key];
+      // Add
+      if (!atom) {
+        this.add({ [key]: atomsByKey[key] });
+        return;
+      }
+      // Update
+      atom.set(atomsByKey[key].value);
+    });
+    return this;
+  }
+
+  /**
+   * Sync collection - add missing atoms, remove extra, update existing atom's values
+   * IMPORTANT: Only atom values are updated and not the atom reference -> so changing the value of the
+   * passed atom (e.g. `x: atom(42)`) later will not affect the collection value, but it will in case atom
+   * was inserted.
+   * @example
+   * ```js
+   * .sync({ x: atom(42), ... })
+   * ```
+   */
+  sync(atomsByKey: AtomsByKey<Value>): this {
+    [...this.keys, ...Object.keys(atomsByKey)].forEach((key) => {
+      const observable = atomsByKey[key];
       // Obsevable does not exit anymore
       if (!observable) {
         this.remove(key);
@@ -268,32 +285,29 @@ class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
   }
 
   /**
-   * Remove all observables but keep your subscriptions
+   * Remove all atoms but keep your subscriptions on the collection
    */
   reset(): this {
     Object.keys(this.#meta).forEach((key) => {
-      const { unsubscribe } = this.#meta[key];
-      unsubscribe();
+      this.#meta[key].unsubscribe();
     });
     this.#value = {};
-    this.#observables = {};
+    this.#atoms = {};
     this.#meta = {};
     return this;
   }
 
   /**
    * Subscribe to updates on any of the observables
-   * @param {Listener<ObservableValues<TValue>>} fn
    */
-  subscribe(fn: Listener<ObservableValues<TValue>>): Unsubscribe {
+  subscribe(fn: Listener<AtomValuesByKey<Value>>): Unsubscribe {
     return this.on('update', fn);
   }
 
   /**
    * Unsubscribe
-   * @param {Listener<ObservableValues<TValue>>} fn
    */
-  unsubscribe(fn: Listener<ObservableValues<TValue>>): this {
+  unsubscribe(fn: Listener<AtomValuesByKey<Value>>): this {
     return this.off('update', fn);
   }
 
@@ -303,12 +317,12 @@ class Collection<TValue> extends EventEmitter<ObservableValues<TValue>>
    * ```js
    * Collection.from({ x: 5, y: 27, z: 42 })
    * ```
-   * @param {ObservableValues<TValue>} values
+   * @param {AtomValuesByKey<TValue>} values
    */
-  static from<TValue>(values: ObservableValues<TValue>): Collection<TValue> {
+  static from<TValue>(values: AtomValuesByKey<TValue>): Collection<TValue> {
     return new Collection(
       Object.keys(values).reduce(
-        (accumulator, key) => ({ ...accumulator, [key]: Observable.from(values[key]) }),
+        (accumulator, key) => ({ ...accumulator, [key]: Atom.from(values[key]) }),
         {}
       )
     );

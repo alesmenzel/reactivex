@@ -36,17 +36,18 @@ module.exports = {
     "@babel/new-cap": "error",
     "@babel/no-invalid-this": "error",
     "@babel/no-unused-expressions": "error",
-    // unicorn
-    "unicorn/no-null": "off",
-    "unicorn/no-reduce": "off",
-    "unicorn/prevent-abbreviations": "off",
-    "unicorn/no-array-for-each": "off",
-    "unicorn/no-array-reduce": "off",
     // typescript
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-unused-vars": "error",
+    "no-redeclare": "off", // to allow TS function overloading
     // overrides
     "no-shadow": "off",
     "no-unused-vars": "off",
   },
+  overrides: [{
+    files: ["./src/**/*.test.ts"],
+    rules: {
+      "import/no-extraneous-dependencies": "off"
+    }
+  }]
 };

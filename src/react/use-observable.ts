@@ -2,9 +2,9 @@
 import { useLayoutEffect, useDebugValue } from "react";
 import useForceUpdate from "./use-force-update";
 import createBatcher from "./create-batcher";
-import type { IObservable } from "../core/observable";
+import type { IAtom } from "../core/atom";
 
-export type UseObservableOutput<TValue> = [TValue, (value: TValue) => IObservable<TValue>]
+export type UseObservableOutput<TValue> = [TValue, (value: TValue) => IAtom<TValue>]
 
 /**
  * Subscribe to observable and update React component on any changes
@@ -26,9 +26,9 @@ export type UseObservableOutput<TValue> = [TValue, (value: TValue) => IObservabl
  *   return <div>{count}</div>
  * }
  * ```
- * @param {IObservable<TValue>} observable
+ * @param {IAtom<TValue>} observable
  */
-function useObservable<TValue>(observable: IObservable<TValue>): UseObservableOutput<TValue> {
+function useObservable<TValue>(observable: IAtom<TValue>): UseObservableOutput<TValue> {
   useDebugValue(() => observable.value);
   const update = useForceUpdate();
 
