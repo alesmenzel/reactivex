@@ -1,14 +1,14 @@
-export interface Flush<TListenerArg> {
-  (calls: TListenerArg[][]): void;
+export interface Flush<ListenerArg> {
+  (calls: ListenerArg[][]): void;
 }
 
-export interface Batcher<TListenerArg> {
-  listener(...args: TListenerArg[]): void;
+export interface Batcher<ListenerArg> {
+  listener(...args: ListenerArg[]): void;
   abort(): void;
 }
 
 /**
- * Batch calls in given time window and then flush them
+ * Batch calls in given time window and then flushes them
  * @example
  * ```js
  * const onFlush = (...args) => {
@@ -25,14 +25,12 @@ export interface Batcher<TListenerArg> {
  * // ...
  * batcher.abort()
  * ```
- * @param {Flush<TListenerArg>} flush
- * @param {number} [timeout=0]
  */
-function createBatcher<TListenerArg>(flush: Flush<TListenerArg>, timeout = 0): Batcher<TListenerArg> {
-  let calls: TListenerArg[][] = [];
+function createBatcher<ListenerArg>(flush: Flush<ListenerArg>, timeout = 0): Batcher<ListenerArg> {
+  let calls: ListenerArg[][] = [];
   let timeoutId: number | undefined;
 
-  function listener(...args: TListenerArg[]) {
+  function listener(...args: ListenerArg[]) {
     calls.push(args);
     if (timeoutId) return;
     // @ts-ignore ts bullshit

@@ -23,8 +23,8 @@
     "declarationDir": "./dist/types/",
     // Library and types
     "lib": [
-      "ESNext",
       "DOM",
+      "ESNext",
     ],
     "typeRoots": [
       "./node_modules/@types",

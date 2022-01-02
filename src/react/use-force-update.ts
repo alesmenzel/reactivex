@@ -1,15 +1,14 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import { useReducer } from 'react';
+import { DispatchWithoutAction, useReducer } from 'react';
 
-function reducer(state: boolean): boolean {
-  // Prevents too many objects garbage collection by swapping boolean value
+export function reducer(state: boolean): boolean {
   return !state;
 }
 
 /**
  * Force update a React component
  */
-export default function useForceUpdate(): () => void {
+export default function useForceUpdate(): DispatchWithoutAction {
   const [, update] = useReducer(reducer, false);
   return update;
 }

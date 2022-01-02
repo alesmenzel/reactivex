@@ -8,7 +8,7 @@ export interface IAtom<Value> {
   get value(): Value
   set value(value: Value)
   get(): Value
-  set(value: any): this
+  set(value: Value | SetFn<Value>): this
   subscribe(listener: Listener<Value>): Unsubscribe
   unsubscribe(listener: Listener<Value>): this
 }

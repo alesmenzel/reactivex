@@ -11,7 +11,7 @@ export function strictEqual<Value>(prevValue: Value, currValue: Value): boolean 
 /**
  * Check if instance is of type Atom
  */
-export function isAtom<Else = any>(value: IAtom<unknown> | Else): value is IAtom<unknown> {
+export function isAtom<Value, Else = any>(value: IAtom<Value> | Else): value is IAtom<Value> {
   return AtomSymbol in value
 }
 
