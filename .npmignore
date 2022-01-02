@@ -27,6 +27,7 @@ jest/
 
 # typescript config
 tsconfig.json
+tsconfig-*.json
 types/
 
 # source
