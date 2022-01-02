@@ -6,7 +6,7 @@
     // Allow JS
     "allowJs": true,
     "checkJs": true,
-    "noEmit": true,
+    "noEmitOnError": true,
     // Modules
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -19,6 +19,9 @@
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "strictPropertyInitialization": true,
+    // Declaration d.ts file
+    "declaration": true,
+    "declarationDir": "types",
     // Library and types
     "lib": [
       "DOM",
@@ -33,6 +36,7 @@
     "./src/**/*"
   ],
   "exclude": [
+    "./src/**/*.test.ts",
     "./coverage/",
     "./dist/",
   ],

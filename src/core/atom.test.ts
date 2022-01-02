@@ -48,7 +48,7 @@ describe('Atom', () => {
       count.value = {data: 'new-payload'};
 
       expect(listener).toBeCalledTimes(1);
-      expect(listener).toBeCalledWith('{NEW_VALUE}');
+      expect(listener).toBeCalledWith({data: 'new-payload'});
     });
   })
 

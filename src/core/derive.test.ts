@@ -8,14 +8,15 @@ describe('Derived', () => {
       const quantity = atom(10);
       const price = atom(200);
 
-      const total = derive([quantity, price], (quantity, price) => quantity + price)
+      const total = derive([quantity, price], (quantity, price) => quantity * price)
+      expect(total.value).toBe(2000)
 
       total.subscribe(listener);
       quantity.value = 15
       price.value = 210
       expect(listener).toBeCalledTimes(2);
       expect(listener).nthCalledWith(1, 3000);
-      expect(listener).nthCalledWith(1, 3150);
+      expect(listener).nthCalledWith(2, 3150);
     });
   });
 
@@ -25,14 +26,15 @@ describe('Derived', () => {
       const quantity = atom(10);
       const price = atom(200);
 
-      const total = deriveStructured({ quantity, price }, ({quantity, price}) => quantity + price)
+      const total = deriveStructured({ quantity, price }, ({quantity, price}) => quantity * price)
+      expect(total.value).toBe(2000)
 
       total.subscribe(listener);
       quantity.value = 15
       price.value = 210
       expect(listener).toBeCalledTimes(2);
       expect(listener).nthCalledWith(1, 3000);
-      expect(listener).nthCalledWith(1, 3150);
+      expect(listener).nthCalledWith(2, 3150);
     });
   });
 });

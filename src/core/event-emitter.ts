@@ -8,7 +8,7 @@ export type Unsubscribe = () => void
  * Simple implementation of event emitter compatible for browser
  */
 class EventEmitter<Events extends { [key: string]: unknown }> {
-	#listeners: Listeners<Events>
+	_listeners: Listeners<Events>
 
 	/**
 	 * Construct EventEmitter
@@ -32,7 +32,7 @@ class EventEmitter<Events extends { [key: string]: unknown }> {
 	 * ```
 	 */
 	constructor() {
-		this.#listeners = {} as Listeners<Events>
+		this._listeners = {} as Listeners<Events>
     // Binds
     this.emit = this.emit.bind(this)
     this.on = this.on.bind(this)
@@ -44,7 +44,7 @@ class EventEmitter<Events extends { [key: string]: unknown }> {
 	 * @example
 	 * ```js
 	 * const listener = () => ...
-	 * emitter.off('update', listener)
+	 * .on('update', listener)
 	 * ```
 	 */
 	on<Type extends keyof Events>(
@@ -56,8 +56,8 @@ class EventEmitter<Events extends { [key: string]: unknown }> {
 			{
         throw new Error('Cannot call <EventEmitter>.on(...) without a listener')
       }
-		this.#listeners[type] = this.#listeners[type] || []
-		this.#listeners[type].push(listener)
+		this._listeners[type] = this._listeners[type] || []
+		this._listeners[type].push(listener)
 		return () => {
 			this.off(type, listener)
 		}
@@ -68,7 +68,7 @@ class EventEmitter<Events extends { [key: string]: unknown }> {
 	 * @example
 	 * ```js
 	 * const listener = () => ...
-	 * emitter.off('update', listener)
+	 * .off('update', listener)
 	 * ```
 	 */
 	off<Type extends keyof Events>(
@@ -78,14 +78,14 @@ class EventEmitter<Events extends { [key: string]: unknown }> {
 		if (!type) throw new Error('Cannot call <EventEmitter>.off without a type')
 		if (!listener)
 			throw new Error('Cannot call <EventEmitter>.off without a listener')
-		if (!this.#listeners[type]) return this
-		const listeners = this.#listeners[type].filter(
+		if (!this._listeners[type]) return this
+		const listeners = this._listeners[type].filter(
 			(fn: Listener<Events[Type]>) => fn !== listener
 		)
 		if (listeners.length > 0) {
-			this.#listeners[type] = listeners
+			this._listeners[type] = listeners
 		} else {
-			delete this.#listeners[type]
+			delete this._listeners[type]
 		}
 		return this
 	}
@@ -94,15 +94,13 @@ class EventEmitter<Events extends { [key: string]: unknown }> {
 	 * Emit event
 	 * @example
 	 * ```js
-	 * emitter.emit('update', { payload: 'data' })
+	 * .emit('update', { payload: 'data' })
 	 * ```
 	 */
 	emit<Type extends keyof Events>(type: Type, event: Events[Type]): this {
 		if (!type) throw new Error('Cannot call <EventEmitter>.emit without a type')
-		if (!this.#listeners[type]) return this
-		this.#listeners[type].forEach((listener: Listener<Events[Type]>) =>
-			listener(event)
-		)
+		if (!this._listeners[type]) return this
+		this._listeners[type].forEach((listener: Listener<Events[Type]>) => listener(event))
 		return this
 	}
 }

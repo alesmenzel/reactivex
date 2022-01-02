@@ -11,10 +11,14 @@ export function strictEqual<Value>(prevValue: Value, currValue: Value): boolean 
 /**
  * Check if instance is of type Atom
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isAtom<Value, Else = any>(value: IAtom<Value> | Else): value is IAtom<Value> {
-  return AtomSymbol in value
+  return typeof value === 'object' && AtomSymbol in value
 }
 
+/**
+ * Check if value is a setter function
+ */
 export function isSetFn<Value> (value: Value | SetFn<Value>): value is SetFn<Value> {
   return typeof value === 'function'
 }
