@@ -1,7 +1,6 @@
-import { IAtom, atom, AtomOptions } from './atom';
+import Atom, { atom, AtomOptions } from './atom';
+import { AtomValuesByKey, AtomsByKey } from "./types"
 
-export type AtomsByKey<Value> = {[key: string]: IAtom<Value>}
-export type AtomValuesByKey<Value> = {[key: string]: Value}
 export type SelectObject<AtomValuesByKey, Return = AtomValuesByKey> = (value: AtomValuesByKey) => Return
 export type SelectArray<AtomValues, Return = AtomValues> = (...values: AtomValues[]) => Return
 
@@ -24,10 +23,8 @@ export function getAtomValuesAsObject<Values> (keys: string[], atoms: AtomsByKey
 
 /**
  * Transform array of atoms into array of atom's values
- * @param atoms
- * @returns
  */
-export function getAtomValuesAsArray<Values> (atoms: IAtom<Values>[]) {
+export function getAtomValuesAsArray<Values> (atoms: Atom<Values>[]) {
   return atoms.map(atom => atom.value)
 }
 
@@ -48,12 +45,11 @@ export function getAtomValuesAsArray<Values> (atoms: IAtom<Values>[]) {
  * )
  * ```
  */
-export function derive<Values, DerivedValue>(
-  atoms: IAtom<Values>[],
-  // eslint-disable-next-line default-param-last
-  select: SelectArray<Values, DerivedValue> = defaultSelect,
-  options?: AtomOptions<DerivedValue>
-): IAtom<DerivedValue> {
+export function derive<Value, DerivedValue>(
+  atoms: Atom<Value>[],
+  select: (...values: Value[]) => DerivedValue,
+  options: AtomOptions<DerivedValue> | undefined = undefined
+): Atom<DerivedValue> {
   const derivedAtom = atom(select(...getAtomValuesAsArray(atoms)), options);
   // subscribe to passed atoms
   atoms.forEach((atom) => {
@@ -90,10 +86,9 @@ export function derive<Values, DerivedValue>(
  */
  export function deriveStructured<Values, DerivedValue>(
   atomsByKey: AtomsByKey<Values>,
-  // eslint-disable-next-line default-param-last
   select: SelectObject<AtomValuesByKey<Values>, DerivedValue> = defaultSelect,
-  options?: AtomOptions<DerivedValue>
-): IAtom<DerivedValue> {
+  options: AtomOptions<DerivedValue> | undefined = undefined
+): Atom<DerivedValue> {
   const keys = Object.keys(atomsByKey);
 
   const derivedAtom = atom(select(getAtomValuesAsObject(keys, atomsByKey)), options);

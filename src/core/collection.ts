@@ -1,8 +1,9 @@
-import Atom, { IAtom } from './atom';
+import Atom, { atom } from './atom';
 import EventEmitter, { Listener, Unsubscribe } from './event-emitter';
+import { AtomValuesByKey, AtomsByKey, AtomsOrValuesByKey, IAtom, SetFn } from "./types"
+import { AtomSymbol } from './constants';
+import { isSetFn } from "./utils"
 
-export type AtomsByKey<Value> = { [key: string]: IAtom<Value> };
-export type AtomValuesByKey<Value> = { [key: string]: Value };
 export type CollectionEvents<Value> = {
   update: AtomValuesByKey<Value>
 }
@@ -12,13 +13,14 @@ export type CollectionEvents<Value> = {
  * Whenever one of the values changes the collection is changed as well.
  */
 class Collection<Value>
-  extends EventEmitter<CollectionEvents<Value>>
-  implements IAtom<AtomValuesByKey<Value>> {
-  #value: AtomValuesByKey<Value> = {};
+extends EventEmitter<CollectionEvents<Value>> implements IAtom<AtomValuesByKey<Value>> {
+  [AtomSymbol]: true
 
-  #atoms: AtomsByKey<Value> = {};
+  _value: AtomValuesByKey<Value> = {}
 
-  #meta: { [key: string]: { unsubscribe: () => void } } = {};
+  _atoms: AtomsByKey<Value> = {}
+
+  _meta: { [key: string]: { unsubscribe: () => void } } = {}
 
   /**
    * Constructs a Collection
@@ -58,7 +60,7 @@ class Collection<Value>
   constructor(atomsByKey: AtomsByKey<Value> = {}) {
     super();
 
-    this.add(atomsByKey);
+    Object.keys(atomsByKey).forEach(key => this._addAtom(key, atomsByKey[key]))
 
     // Binds
     this.get = this.get.bind(this);
@@ -75,14 +77,14 @@ class Collection<Value>
    * ```
    */
   get value(): AtomValuesByKey<Value> {
-    return this.#value;
+    return this._value;
   }
 
   /**
    * Partially update existing values
    * @example
    * ```js
-   * .value = { x: 5, y: (y) => y + 15 }
+   * .value = { x: 5, y: y: 15 }
    * ```
    */
   set value(valuesByKey: AtomValuesByKey<Value>) {
@@ -97,24 +99,27 @@ class Collection<Value>
    * ```
    */
   get(): AtomValuesByKey<Value> {
-    return this.#value;
+    return this._value;
   }
 
   /**
-   * Partially update existing values
-   *
-   * IMPORTANT: Does not allow to add new atoms! If you want to add a new atom, use .add(...) instead.
+   * Partially update values, in case atom with such id doesnt exist, it will be created
    * @example
    * ```js
-   * .set({ x: 5, y: (y) => y + 15 })
+   * .set({ x: 5, y: y: 15 })
+   * .set(({x, y}) => ({ x: 5, y: y + 15 }))
    * ```
-   * @param {AtomValuesByKey<Value>} valuesByKey
    */
-  set(valuesByKey: AtomValuesByKey<Value>): this {
+  set(value: AtomValuesByKey<Value> | SetFn<AtomValuesByKey<Value>>): this {
+    const valuesByKey: AtomValuesByKey<Value> = isSetFn(value) ? value(this._value) : value;
+
     Object.keys(valuesByKey)
       .forEach((key) => {
-        if (!this.#atoms[key]) return
-        this.#atoms[key].set(valuesByKey[key]);
+        if (!this._atoms[key]) {
+          this._addAtom(key, atom(valuesByKey[key]));
+          return
+        }
+        this._atoms[key].set(valuesByKey[key]);
       });
     return this;
   }
@@ -127,7 +132,7 @@ class Collection<Value>
    * ```
    */
   get keys(): string[] {
-    return Object.keys(this.#atoms);
+    return Object.keys(this._atoms);
   }
 
   /**
@@ -142,7 +147,7 @@ class Collection<Value>
    */
   one(key: string | string[]): IAtom<Value> | null {
     const [path, ...paths] = Array.isArray(key) ? key : key.split('.');
-    const atom = this.#atoms[path];
+    const atom = this._atoms[path];
     if (!atom) return null;
     if (!paths.length) return atom;
     if (atom instanceof Collection) return atom.one(paths);
@@ -164,32 +169,38 @@ class Collection<Value>
   }
 
   /**
-   * Add atom(s)
-   * @example
-   * ```js
-   * .add({ z: atom(42), ... })
-   * ```
+   * Add an atom to collection
    */
-  add(atomsByKey: AtomsByKey<Value>): this {
-    Object.keys(atomsByKey).forEach((key) => {
-      // Check if the key already exists and if it does then unsubscribe from the atom (override)
-      if (this.#atoms[key]) this.#meta[key].unsubscribe();
-      // Add new observable
-      const atom = atomsByKey[key];
-      this.#atoms[key] = atom;
-      this.#value[key] = atom.value;
+  _addAtom(key: string, atom: IAtom<Value>) {
+    // Check if the key already exists and if it does then unsubscribe from the atom (override)
+    if (this._atoms[key]) this._meta[key].unsubscribe();
 
-      const unsubscribe = atom.subscribe((value) => {
-        // Create a new reference for immutability
-        this.#value = {...this.#value, [key]: value};
-        this.emit('update', this.#value);
-      });
+    this._atoms[key] = atom;
+    this._value[key] = atom.value;
 
-      this.#meta[key] = this.#meta[key] || {};
-      this.#meta[key].unsubscribe = unsubscribe;
-      this.emit('update', this.#value);
+    const unsubscribe = atom.subscribe((value) => {
+      // Create a new reference for immutability
+      this._value = {...this._value, [key]: value};
+      this.emit('update', this._value);
     });
-    return this;
+
+    this._meta[key] = this._meta[key] || {};
+    this._meta[key].unsubscribe = unsubscribe;
+    this.emit('update', this._value);
+  }
+
+  /**
+   * Remove atom from collection by key
+   */
+  _removeAtomByKey(key: string) {
+    const atom = this._atoms[key];
+    if (!atom) return;
+    this._meta[key].unsubscribe();
+    this._value = {...this._value}
+    delete this._value[key]
+    delete this._atoms[key];
+    delete this._meta[key];
+    this.emit('update', this._value);
   }
 
   /**
@@ -199,67 +210,20 @@ class Collection<Value>
    * .remove("x")
    * .remove(["x", "y", ...])
    * ```
-   * @param {string | string[]} key
+   * @param {string | string[]} keys
    */
-  remove(key: string | string[]): this {
-    // Array of keys
-    if (Array.isArray(key)) {
-      // eslint-disable-next-line no-shadow
-      key.forEach((key) => {
-        const atom = this.#atoms[key];
-        if (!atom) return;
-        this.#meta[key].unsubscribe();
-        this.#value = {...this.#value}
-        delete this.#value[key]
-        delete this.#atoms[key];
-        delete this.#meta[key];
-        this.emit('update', this.#value);
-      });
-      return this;
+  remove(keys: string | string[]): this {
+    if (Array.isArray(keys)) {
+      keys.forEach((key) => this._removeAtomByKey(key));
+      return this
     }
 
-    // Single key
-    if (!this.#atoms[key]) return this;
-    const atom = this.#atoms[key];
-    if (!atom) return this;
-    this.#meta[key].unsubscribe();
-    this.#value = {...this.#value}
-    delete this.#value[key]
-    delete this.#meta[key];
-    delete this.#atoms[key];
-    this.emit('update', this.#value);
+    this._removeAtomByKey(keys)
     return this;
   }
 
   /**
-   * Upsert atom(s)
-   * IMPORTANT: Only atom values are updated and not the atom reference -> so changing the value of the
-   * passed atom (e.g. `x: atom(42)`) later will not affect the collection value, but it will in case atom
-   * was inserted.
-   * @example
-   * ```js
-   * .upsert({ x: atom(42), y: atom(30), ... })
-   * ```
-   */
-  upsert(atomsByKey: AtomsByKey<Value>): this {
-    Object.keys(atomsByKey).forEach((key) => {
-      const atom = this.#atoms[key];
-      // Add
-      if (!atom) {
-        this.add({ [key]: atomsByKey[key] });
-        return;
-      }
-      // Update
-      atom.set(atomsByKey[key].value);
-    });
-    return this;
-  }
-
-  /**
-   * Sync collection - add missing atoms, remove extra, update existing atom's values
-   * IMPORTANT: Only atom values are updated and not the atom reference -> so changing the value of the
-   * passed atom (e.g. `x: atom(42)`) later will not affect the collection value, but it will in case atom
-   * was inserted.
+   * Sync collection - add missing atoms, remove extra, replace existing atoms
    * @example
    * ```js
    * .sync({ x: atom(42), ... })
@@ -267,33 +231,32 @@ class Collection<Value>
    */
   sync(atomsByKey: AtomsByKey<Value>): this {
     [...this.keys, ...Object.keys(atomsByKey)].forEach((key) => {
-      const observable = atomsByKey[key];
-      // Obsevable does not exit anymore
-      if (!observable) {
+      const atom = atomsByKey[key];
+      // Atom does not exit anymore
+      if (!atom) {
         this.remove(key);
         return;
       }
-      // New observable
-      if (!this.#value[key]) {
-        this.add({ [key]: observable });
-        return;
-      }
-      // Update existing one
-      this.set({ [key]: observable.value });
+      // Existing/new atom
+      this._addAtom(key, atom);
     });
     return this;
   }
 
   /**
    * Remove all atoms but keep your subscriptions on the collection
+   * @example
+   * ```js
+   * .reset()
+   * ```
    */
   reset(): this {
-    Object.keys(this.#meta).forEach((key) => {
-      this.#meta[key].unsubscribe();
+    Object.keys(this._meta).forEach((key) => {
+      this._meta[key].unsubscribe();
     });
-    this.#value = {};
-    this.#atoms = {};
-    this.#meta = {};
+    this._value = {};
+    this._atoms = {};
+    this._meta = {};
     return this;
   }
 
@@ -312,21 +275,76 @@ class Collection<Value>
   }
 
   /**
-   * Create static observable collection
+   * Create observable collection
    * @example
    * ```js
+   * Collection.from({ x: atom(5), y: atom(27), z: atom(42) })
+   * // You can also pass items directly and they will transformed into atoms
    * Collection.from({ x: 5, y: 27, z: 42 })
    * ```
-   * @param {AtomValuesByKey<TValue>} values
    */
-  static from<TValue>(values: AtomValuesByKey<TValue>): Collection<TValue> {
-    return new Collection(
-      Object.keys(values).reduce(
-        (accumulator, key) => ({ ...accumulator, [key]: Atom.from(values[key]) }),
-        {}
-      )
-    );
+  static from<Value>(atomsByKey: AtomsOrValuesByKey<Value>): Collection<Value> {
+    return new Collection(Object.keys(atomsByKey).reduce((acc, key) => {
+      acc[key] = Atom.from(atomsByKey[key])
+      return acc
+    }, {} as AtomsByKey<Value>));
   }
+
+  /**
+   * Iterator iterates over the atoms
+   */
+  [Symbol.iterator] () {
+    const {keys} = this
+
+    let index = 0;
+    return {
+      next: () => {
+        if (index < keys.length) {
+          return {value: this._atoms[keys[index++]], done: false}
+        }
+        return {done: true}
+      }
+    }
+  }
+}
+
+/**
+   * Constructs a Collection
+   * @example
+   * ```
+   * // Create a collection
+   * const people = collection({
+   *   // <id>: Atom<Value> | Value
+   *   1: atom({name: 'John'}),
+   *   2: {name: 'Martha'},
+   *   ...
+   * })
+   *
+   * // Read from collection
+   * people.value // { 1: {name: 'John'}, 2: {name: 'Martha'} }
+   * people.get() // { 1: {name: 'John'}, 2: {name: 'Martha'} }
+   *
+   * // Change collection´s values (updates can be partial)
+   * people.value = { 1: {name: John, job: 'News Reporter'} }
+   * // people.value -> { 1: {name: 'John, job: 'News Reporter'}, 2: {name: 'Martha'} }
+   * people.set({ 1: {name: John, job: 'News Reporter'} })
+   * // people.value -> { 1: {name: 'John, job: 'News Reporter'}, 2: {name: 'Martha'} }
+   *
+   * // Add to collection
+   * people.add({ 3: atom({name: 'Jess'}), ... })
+   * // people.value -> { 1: {name: 'John, job: 'News Reporter'}, 2: {name: 'Martha'}, 3: {name: 'Jess'} }
+   *
+   * // Remove from collection (by id(s))
+   * people.remove("1")
+   * people.remove(["2", "3"])
+   *
+   * // Listen on changes
+   * people.subscribe(({ key, value }) => ...)
+   * people.unsubscribe(({ key, value }) => ...)
+   * ```
+   */
+export function collection<Value>(atomsByKey: AtomsByKey<Value>): Collection<Value> {
+  return Collection.from(atomsByKey)
 }
 
 export default Collection;

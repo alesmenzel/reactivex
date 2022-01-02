@@ -60,4 +60,13 @@ describe('Atom', () => {
     expect(listener).toBeCalledTimes(1);
     expect(listener).toBeCalledWith('{NEW_VALUE}');
   });
+
+  it('set', () => {
+    const count = new Atom('{VALUE}');
+    const listener = jest.fn();
+    count.subscribe(listener);
+    count.set(() => '{NEW_VALUE}');
+    expect(listener).toBeCalledTimes(1);
+    expect(listener).toBeCalledWith('{NEW_VALUE}');
+  });
 });

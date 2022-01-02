@@ -32,6 +32,7 @@ module.exports = {
         ts: 'never',
       },
     ],
+    "import/prefer-default-export": "off",
     // @babel rules
     "@babel/new-cap": "error",
     "@babel/no-invalid-this": "error",
@@ -43,6 +44,10 @@ module.exports = {
     // overrides
     "no-shadow": "off",
     "no-unused-vars": "off",
+    "no-underscore-dangle": "off",
+    "no-param-reassign": "off",
+    "class-methods-use-this": "off",
+    "no-plusplus": "off"
   },
   overrides: [{
     files: ["./src/**/*.test.ts"],

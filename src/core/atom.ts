@@ -1,30 +1,28 @@
-import EventEmitter, {Listener, Unsubscribe} from './event-emitter';
-import { strictEqual } from './utils';
+import EventEmitter, { Listener, Unsubscribe } from './event-emitter';
+import { AtomSymbol } from './constants';
+import { isAtom, strictEqual, isSetFn } from './utils';
+import {IAtom, SetFn} from "./types"
 
 export type AtomEvents<Value> = {
   update: Value
 }
 
-export type SetFn<Value> = (prevValue: Value) => Value
-export interface IAtom<Value> {
-  value: Value;
-  get(): Value;
-  set(value: Value | SetFn<Value>): this;
-  subscribe(listener: Listener<Value>): Unsubscribe;
-  unsubscribe(listener: Listener<Value>): this;
-}
-
 export type AtomOptions<Value> = {
-  isEqual?: (prevValue: Value, currValue: Value) => boolean
+  isEqual: (prevValue: Value, currValue: Value) => boolean
 }
 
 /**
  * Observale value container that emits an update event whenever the value is changed
  */
-class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value> {
-  #value: Value;
+class Atom<Value, Events extends AtomEvents<Value> = AtomEvents<Value>>
+extends EventEmitter<Events> implements IAtom<Value> {
+  [AtomSymbol]: true
 
-  #options: AtomOptions<Value>;
+  _value: Value
+
+  _options: AtomOptions<Value> = {
+    isEqual: strictEqual
+  };
 
   /**
    * Construct Atom
@@ -49,14 +47,11 @@ class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value
    * count.unsubscribe((value) => ...)
    * ```
    */
-  constructor(value: Value, options: AtomOptions<Value> = {}) {
+  constructor(value: Value, options: Partial<AtomOptions<Value>> = {}) {
     super();
 
-    this.#value = value;
-    this.#options = {
-      isEqual: strictEqual,
-      ...options
-    };
+    this._value = value
+    this._options = {...this._options, ...options};
     // Binds
     this.get = this.get.bind(this);
     this.set = this.set.bind(this);
@@ -71,8 +66,8 @@ class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value
    * atom.value // 42
    * ```
    */
-  get value(): Value {
-    return this.get();
+   get value(): Value {
+    return this._value
   }
 
   /**
@@ -83,7 +78,7 @@ class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value
    * ```
    */
   set value(value: Value) {
-    this.set(value);
+    this.set(value)
   }
 
   /**
@@ -94,7 +89,7 @@ class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value
    * ```
    */
   get(): Value {
-    return this.#value;
+    return this._value
   }
 
   /**
@@ -102,43 +97,23 @@ class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value
    * @example
    * ```js
    * atom.set(42)
-   * atom.set((prevValue) => 42)
+   * atom.set((prevValue) => prevValue + 42)
    * ```
    */
-  set(value: Value): this {
-    const newValue = typeof value === 'function' ? value(this.#value) : value;
-    if (newValue === this.#value) return this;
-    this.#value = newValue;
+  set(value: Value | SetFn<Value>): this {
+    const newValue: Value = isSetFn(value) ? value(this._value) : value;
+    if (this._options.isEqual(this._value, newValue)) return this;
+    this._value = newValue;
     this.emit('update', newValue);
     return this;
   }
 
-  /**
-   * Subscribe to changes
-   * @example
-   * ```js
-   * const listener = (value) => {
-   *   // ...
-   * }
-   * atom.subscribe(listener)
-   * ```
-   */
-  subscribe(fn: Listener<Value>): Unsubscribe {
-    return this.on('update', fn);
+  subscribe(listener: Listener<Value>): Unsubscribe {
+    return this.on('update', listener)
   }
 
-  /**
-   * Unsubscribe from listening on changes
-   * @example
-   * ```js
-   * const listener = (value) => {
-   *   // ...
-   * }
-   * atom.unsubscribe(listener)
-   * ```
-   */
-  unsubscribe(fn: Listener<Value>): this {
-    return this.off('update', fn);
+  unsubscribe(listener: Listener<Value>): this {
+    return this.off('update', listener)
   }
 
   /**
@@ -146,9 +121,14 @@ class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value
    * @example
    * ```js
    * Atom.from(42)
+   * // Can be also used to clone atoms
+   * Atom.from(atom(42))
    * ```
    */
-  static from<Value>(value: Value, options?: AtomOptions<Value>): Atom<Value> {
+  static from<Value>(value: IAtom<Value> | Value, options?: AtomOptions<Value>): Atom<Value> {
+    if (isAtom(value)) {
+      value = value.value
+    }
     return new Atom(value, options);
   }
 }
@@ -179,7 +159,7 @@ class Atom<Value> extends EventEmitter<AtomEvents<Value>> implements IAtom<Value
  * ```
  */
 export function atom<Value>(value: Value, options?: AtomOptions<Value>): Atom<Value> {
-  return new Atom(value, options)
+  return Atom.from(value, options)
 }
 
 export default Atom;
